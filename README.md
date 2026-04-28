@@ -57,11 +57,13 @@ The dashboard updates live via Supabase Realtime — you need to enable it:
 
 ### 4. Get your API credentials
 
-1. In Supabase, go to **Settings → API**.
+1. In Supabase, go to **Settings → API Keys**.
 2. Copy these three values:
    - **Project URL** (something like `https://abc123.supabase.co`)
-   - **anon public** key (starts with `eyJ…`)
-   - **service_role** key (starts with `eyJ…` — keep this secret)
+   - **Publishable key** (starts with `sb_publishable_…`) — safe to expose in browser code
+   - **Secret key** (starts with `sb_secret_…`) — server-side only, never expose to client
+
+> Note: If you see older keys labeled `anon` and `service_role` in your project, those still work but the newer publishable/secret keys are recommended for new projects. They have clearer naming and can be rotated independently.
 
 ### 5. Set up the project locally
 
@@ -76,8 +78,8 @@ Edit `.env.local` and paste the three values from Supabase:
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://abc123.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ…
-SUPABASE_SERVICE_ROLE_KEY=eyJ…
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_…
+SUPABASE_SECRET_KEY=sb_secret_…
 ```
 
 ### 6. Run locally
@@ -111,8 +113,8 @@ git push -u origin main
 4. Before clicking **Deploy**, expand **Environment Variables** and add the
    three values from your `.env.local`:
    - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+   - `SUPABASE_SECRET_KEY`
 5. Click **Deploy**. Wait ~1–2 minutes.
 6. Your site is live at `https://your-project.vercel.app`.
 

@@ -7,7 +7,7 @@
 3. **SQL Editor** → New Query → paste contents of `supabase/migrations/0001_initial_schema.sql` → Run
 4. **SQL Editor** → New Query → paste contents of `supabase/migrations/0002_segmentation_function.sql` → Run
 5. **Database → Replication** → enable replication for `cdp_user_profiles`, `cdp_activations`, `cdp_events`
-6. **Settings → API** → copy: Project URL, `anon public` key, `service_role` key
+6. **Settings → API Keys** → copy: Project URL, **publishable key** (`sb_publishable_...`), **secret key** (`sb_secret_...`)
 
 ## 2. Local run (5 min)
 
