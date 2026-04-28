@@ -19,24 +19,35 @@ export default function HomePage() {
     const supabase = supabaseBrowser();
 
     async function loadStats() {
-      const [{ data: profiles }, { count: events }, { count: activations }] =
-        await Promise.all([
-          supabase.from("cdp_user_profiles").select("current_segment"),
-          supabase.from("cdp_events").select("*", { count: "exact", head: true }),
-          supabase
-            .from("cdp_activations")
-            .select("*", { count: "exact", head: true })
-            .gte("triggered_at", new Date(Date.now() - 86400000).toISOString()),
-        ]);
+      // Query the pre-aggregated view (small result set, no row cap issues)
+      // and use head:true with exact count to get total user / event / activation counts
+      // without pulling every row.
+      const [
+        { data: segmentRows },
+        { count: usersCount },
+        { count: events },
+        { count: activations },
+      ] = await Promise.all([
+        supabase.from("cdp_segment_sizes").select("segment, user_count"),
+        supabase
+          .from("cdp_user_profiles")
+          .select("*", { count: "exact", head: true }),
+        supabase
+          .from("cdp_events")
+          .select("*", { count: "exact", head: true }),
+        supabase
+          .from("cdp_activations")
+          .select("*", { count: "exact", head: true })
+          .gte("triggered_at", new Date(Date.now() - 86400000).toISOString()),
+      ]);
 
       const sizes: Record<string, number> = {};
-      profiles?.forEach((p) => {
-        const seg = p.current_segment as string;
-        sizes[seg] = (sizes[seg] || 0) + 1;
+      segmentRows?.forEach((row: any) => {
+        sizes[row.segment as string] = row.user_count as number;
       });
 
       setSegmentSizes(sizes);
-      setTotalUsers(profiles?.length ?? 0);
+      setTotalUsers(usersCount ?? 0);
       setTotalEvents(events ?? 0);
       setRecentActivations(activations ?? 0);
       setLoading(false);
