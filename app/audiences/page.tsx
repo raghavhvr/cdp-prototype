@@ -2,10 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase";
-import { SEGMENTS, SEGMENTS_BY_PRIORITY, SegmentKey } from "@/lib/segments";
-import { Card, CardTitle, Badge, Button } from "@/components/ui";
+import {
+  SEGMENTS,
+  SEGMENT_CATEGORIES,
+  SegmentKey,
+  ATTRIBUTES_LIST,
+  getAttributeLabel,
+} from "@/lib/segments";
+import { Card, CardTitle, CardDescription, Badge } from "@/components/ui";
 import { formatNumber, formatAed } from "@/lib/utils";
-import { Send, Eye, Pause } from "lucide-react";
+import { Send, Pause, Layers, Sparkles } from "lucide-react";
 
 interface SegmentStats {
   user_count: number;
@@ -21,19 +27,16 @@ export default function AudiencesPage() {
   const [loading, setLoading] = useState(true);
   const [highlighted, setHighlighted] = useState<string | null>(null);
 
-  // Handle scroll-to-segment when arriving with a hash like #abandoned_cart
   useEffect(() => {
     if (typeof window === "undefined") return;
     const hash = window.location.hash.replace("#", "");
     if (!hash) return;
 
-    // Wait a tick for the segment cards to render, then scroll + highlight
     const timer = setTimeout(() => {
       const el = document.getElementById(hash);
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "center" });
         setHighlighted(hash);
-        // Fade out highlight after 2 seconds
         setTimeout(() => setHighlighted(null), 2000);
       }
     }, 100);
@@ -78,27 +81,79 @@ export default function AudiencesPage() {
   }, []);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-semibold">Audiences</h1>
-        <p className="text-brand-muted mt-1">
-          Each visitor is assigned to exactly one audience based on priority.
-          Higher priority wins — so a user who abandons a cart is in
-          &ldquo;Abandoned Cart,&rdquo; not also in &ldquo;Engaged Browser.&rdquo;
+        <p className="text-brand-muted mt-1 max-w-3xl">
+          Each visitor is assigned to exactly one primary audience based on
+          priority. Sub-attributes (game affinity, price tier, recency) stack
+          on top to enable personalized creative within each audience.
         </p>
       </div>
 
-      <div className="space-y-4">
-        {SEGMENTS_BY_PRIORITY.filter((s) => s.key !== "unassigned").map((seg) => (
-          <SegmentRow
-            key={seg.key}
-            segmentKey={seg.key}
-            stats={stats[seg.key]}
-            loading={loading}
-            isHighlighted={highlighted === seg.key}
-          />
-        ))}
-      </div>
+      {/* Attribute reference */}
+      <Card>
+        <CardTitle>
+          <Sparkles className="w-5 h-5 inline mr-2 text-brand-accent" />
+          Sub-Attributes
+        </CardTitle>
+        <CardDescription>
+          Every user gets these attributes computed alongside their primary
+          segment. Activation can combine segment + attributes for personalized
+          creative — e.g., &ldquo;Abandoned Cart + Mega7 affinity + High value.&rdquo;
+        </CardDescription>
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {ATTRIBUTES_LIST.map((attr) => (
+            <div
+              key={attr.key}
+              className="bg-brand-elevated border border-brand-border rounded-md p-3"
+            >
+              <div className="text-sm font-medium text-brand-text">
+                {attr.displayName}
+              </div>
+              <div className="text-xs text-brand-muted mt-0.5">
+                {attr.description}
+              </div>
+              <div className="mt-2 flex flex-wrap gap-1">
+                {attr.values.map((v) => (
+                  <span
+                    key={v.value}
+                    className="text-xs text-brand-dim bg-brand-surface px-1.5 py-0.5 rounded"
+                  >
+                    {v.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* Categories */}
+      {Object.entries(SEGMENT_CATEGORIES).map(([key, category]) => (
+        <div key={key} className="space-y-3">
+          <div className="border-b border-brand-border pb-2">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <Layers className="w-5 h-5 text-brand-accent" />
+              {category.name}
+            </h2>
+            <p className="text-sm text-brand-muted mt-1">
+              {category.description}
+            </p>
+          </div>
+          <div className="space-y-3">
+            {category.segments.map((segKey) => (
+              <SegmentRow
+                key={segKey}
+                segmentKey={segKey}
+                stats={stats[segKey]}
+                loading={loading}
+                isHighlighted={highlighted === segKey}
+              />
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -121,13 +176,10 @@ function SegmentRow({
     <Card
       id={segmentKey}
       className={`scroll-mt-24 transition-all duration-500 ${
-        isHighlighted
-          ? "border-brand-accent ring-2 ring-brand-accent/40"
-          : ""
+        isHighlighted ? "border-brand-accent ring-2 ring-brand-accent/40" : ""
       }`}
     >
       <div className="flex items-start gap-6 flex-wrap">
-        {/* Priority badge */}
         <div className="flex-shrink-0">
           <div className="text-xs text-brand-dim mb-1">PRIORITY</div>
           <Badge color={seg.colorKey} className="text-base px-3 py-1">
@@ -135,7 +187,6 @@ function SegmentRow({
           </Badge>
         </div>
 
-        {/* Name + description */}
         <div className="flex-1 min-w-[280px]">
           <div className="flex items-center gap-3 flex-wrap">
             <CardTitle>{seg.displayName}</CardTitle>
@@ -172,7 +223,6 @@ function SegmentRow({
           </div>
         </div>
 
-        {/* Stats */}
         <div className="flex-shrink-0 min-w-[180px] space-y-2">
           <div>
             <div className="text-xs text-brand-dim">USERS IN AUDIENCE</div>
@@ -183,7 +233,7 @@ function SegmentRow({
           {stats && stats.user_count > 0 && (
             <>
               <div className="text-xs text-brand-muted">
-                Anonymous: {formatNumber(stats.anonymous_users)} ·{" "}
+                Anon: {formatNumber(stats.anonymous_users)} ·{" "}
                 Known: {formatNumber(stats.known_users)}
               </div>
               <div className="text-xs text-brand-muted">

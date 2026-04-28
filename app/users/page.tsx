@@ -2,10 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase";
-import { SEGMENTS } from "@/lib/segments";
+import {
+  SEGMENTS,
+  ATTRIBUTES,
+  AttributeKey,
+  getAttributeLabel,
+} from "@/lib/segments";
 import { Card, CardTitle, CardDescription, Badge, Button } from "@/components/ui";
 import { formatNumber, formatAed } from "@/lib/utils";
-import { Search, User as UserIcon, Clock } from "lucide-react";
+import { Search, User as UserIcon, Clock, Sparkles } from "lucide-react";
 
 interface Profile {
   identity_key: string;
@@ -28,6 +33,7 @@ interface Profile {
   country_code: string | null;
   is_eligible: boolean;
   current_segment: string;
+  user_attributes: Record<string, string> | null;
 }
 
 interface Event {
@@ -250,10 +256,34 @@ function UserDetail({ profile }: { profile: Profile }) {
           </Badge>
         )}
         {!profile.is_eligible && <Badge color="dim">Ineligible</Badge>}
-        {profile.preferred_game && (
-          <Badge color="info">Likes: {profile.preferred_game}</Badge>
-        )}
       </div>
+
+      {/* Attribute chips */}
+      {profile.user_attributes && Object.keys(profile.user_attributes).length > 0 && (
+        <div className="mt-4 pt-4 border-t border-brand-border">
+          <div className="text-xs text-brand-dim mb-2 flex items-center gap-1">
+            <Sparkles className="w-3.5 h-3.5" />
+            SUB-ATTRIBUTES
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(profile.user_attributes).map(([key, value]) => {
+              const attr = ATTRIBUTES[key as AttributeKey];
+              if (!attr) return null;
+              return (
+                <div
+                  key={key}
+                  className="bg-brand-elevated border border-brand-border rounded px-2 py-1 text-xs"
+                >
+                  <span className="text-brand-dim">{attr.displayName}:</span>{" "}
+                  <span className="text-brand-text font-medium">
+                    {getAttributeLabel(key as AttributeKey, value)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {seg && (
         <div className="mt-4 pt-4 border-t border-brand-border">

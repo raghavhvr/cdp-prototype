@@ -45,6 +45,16 @@ In your Supabase project dashboard:
 4. Click **Run** (bottom right).
 5. You should see "CDP schema created successfully".
 6. Repeat for `supabase/migrations/0002_segmentation_function.sql`.
+7. Repeat for `supabase/migrations/0003_attributes_and_segments.sql` (adds new
+   segments and the `user_attributes` column for sub-attributes).
+8. Repeat for `supabase/migrations/0004_updated_segmentation.sql` (replaces
+   the segmentation function with the expanded version that handles all 17
+   primary segments + 7 sub-attributes).
+
+> **If you already ran the prototype before:** migrations 0003 and 0004 are
+> additive and safe to apply on top of an existing database. After running
+> them, go to Admin → click "Reset Everything" → "Generate Dummy Data" → "Run
+> Segmentation" to populate the new segments cleanly.
 
 ### 3. Enable Realtime on key tables
 

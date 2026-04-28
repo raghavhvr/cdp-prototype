@@ -154,8 +154,24 @@ export default function ActivationsPage() {
                 >
                   {CHANNEL_LABELS[a.channel] ?? a.channel}
                 </Badge>
-                <span className="ml-auto text-xs text-brand-dim">
-                  {a.payload?.preferred_game && `→ ${a.payload.preferred_game}`}
+                <span className="ml-auto text-xs text-brand-dim flex items-center gap-2">
+                  {a.payload?.attributes?.game_affinity &&
+                    a.payload.attributes.game_affinity !== "none" && (
+                      <span className="bg-brand-elevated px-1.5 py-0.5 rounded">
+                        🎮 {a.payload.attributes.game_affinity}
+                      </span>
+                    )}
+                  {a.payload?.attributes?.price_tier &&
+                    a.payload.attributes.price_tier !== "unknown" && (
+                      <span className="bg-brand-elevated px-1.5 py-0.5 rounded">
+                        💰 {a.payload.attributes.price_tier}
+                      </span>
+                    )}
+                  {a.payload?.attributes?.recency && (
+                    <span className="bg-brand-elevated px-1.5 py-0.5 rounded">
+                      ⏱ {a.payload.attributes.recency}
+                    </span>
+                  )}
                 </span>
               </div>
             );
