@@ -3,6 +3,9 @@ import { supabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// Vercel: extend max duration for segmentation runs at scale.
+// Free tier caps at 60s, Pro at 300s. The DB function itself has its own 5min timeout.
+export const maxDuration = 60;
 
 export async function POST() {
   try {

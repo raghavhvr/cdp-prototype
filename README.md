@@ -50,6 +50,10 @@ In your Supabase project dashboard:
 8. Repeat for `supabase/migrations/0004_updated_segmentation.sql` (replaces
    the segmentation function with the expanded version that handles all 17
    primary segments + 7 sub-attributes).
+9. Repeat for `supabase/migrations/0005_optimized_segmentation.sql`
+   (performance fix for datasets of 5K+ users — replaces the segmentation
+   function with a version that uses single-pass aggregations and an extended
+   statement timeout).
 
 > **If you already ran the prototype before:** migrations 0003 and 0004 are
 > additive and safe to apply on top of an existing database. After running
