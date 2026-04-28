@@ -19,6 +19,27 @@ interface SegmentStats {
 export default function AudiencesPage() {
   const [stats, setStats] = useState<Record<string, SegmentStats>>({});
   const [loading, setLoading] = useState(true);
+  const [highlighted, setHighlighted] = useState<string | null>(null);
+
+  // Handle scroll-to-segment when arriving with a hash like #abandoned_cart
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const hash = window.location.hash.replace("#", "");
+    if (!hash) return;
+
+    // Wait a tick for the segment cards to render, then scroll + highlight
+    const timer = setTimeout(() => {
+      const el = document.getElementById(hash);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        setHighlighted(hash);
+        // Fade out highlight after 2 seconds
+        setTimeout(() => setHighlighted(null), 2000);
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const supabase = supabaseBrowser();
@@ -74,6 +95,7 @@ export default function AudiencesPage() {
             segmentKey={seg.key}
             stats={stats[seg.key]}
             loading={loading}
+            isHighlighted={highlighted === seg.key}
           />
         ))}
       </div>
@@ -85,16 +107,25 @@ function SegmentRow({
   segmentKey,
   stats,
   loading,
+  isHighlighted,
 }: {
   segmentKey: SegmentKey;
   stats?: SegmentStats;
   loading: boolean;
+  isHighlighted?: boolean;
 }) {
   const seg = SEGMENTS[segmentKey];
   const count = stats?.user_count ?? 0;
 
   return (
-    <Card>
+    <Card
+      id={segmentKey}
+      className={`scroll-mt-24 transition-all duration-500 ${
+        isHighlighted
+          ? "border-brand-accent ring-2 ring-brand-accent/40"
+          : ""
+      }`}
+    >
       <div className="flex items-start gap-6 flex-wrap">
         {/* Priority badge */}
         <div className="flex-shrink-0">

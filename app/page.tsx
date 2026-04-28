@@ -196,20 +196,30 @@ function SegmentMiniCard({
   const pct = totalUsers > 0 ? (count / totalUsers) * 100 : 0;
 
   return (
-    <Card className="hover:border-brand-accent/40 transition-colors">
-      <div className="flex items-start justify-between mb-2">
-        <Badge color={seg.colorKey}>P{seg.priority}</Badge>
-        <div className="text-2xl font-semibold">{formatNumber(count)}</div>
-      </div>
-      <div className="font-medium text-brand-text">{seg.displayName}</div>
-      <div className="text-xs text-brand-muted mt-1">{seg.summary}</div>
-      <div className="mt-3 h-1.5 bg-brand-elevated rounded-full overflow-hidden">
-        <div
-          className="h-full bg-brand-accent transition-all"
-          style={{ width: `${Math.min(pct, 100)}%` }}
-        />
-      </div>
-      <div className="text-xs text-brand-dim mt-1">{pct.toFixed(1)}% of users</div>
-    </Card>
+    <Link
+      href={`/audiences#${segmentKey}`}
+      className="block group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2 focus-visible:ring-offset-brand-bg rounded-lg"
+    >
+      <Card className="hover:border-brand-accent/40 group-hover:bg-brand-elevated/40 transition-colors cursor-pointer">
+        <div className="flex items-start justify-between mb-2">
+          <Badge color={seg.colorKey}>P{seg.priority}</Badge>
+          <div className="text-2xl font-semibold">{formatNumber(count)}</div>
+        </div>
+        <div className="font-medium text-brand-text">{seg.displayName}</div>
+        <div className="text-xs text-brand-muted mt-1">{seg.summary}</div>
+        <div className="mt-3 h-1.5 bg-brand-elevated rounded-full overflow-hidden">
+          <div
+            className="h-full bg-brand-accent transition-all"
+            style={{ width: `${Math.min(pct, 100)}%` }}
+          />
+        </div>
+        <div className="text-xs text-brand-dim mt-1 flex items-center justify-between">
+          <span>{pct.toFixed(1)}% of users</span>
+          <span className="text-brand-muted opacity-0 group-hover:opacity-100 transition-opacity">
+            View details →
+          </span>
+        </div>
+      </Card>
+    </Link>
   );
 }
