@@ -54,6 +54,9 @@ In your Supabase project dashboard:
    (performance fix for datasets of 5K+ users — replaces the segmentation
    function with a version that uses single-pass aggregations and an extended
    statement timeout).
+10. Repeat for `supabase/migrations/0006_manual_activation.sql` (adds manual
+    push capability, expanded channel list — Snap, TikTok, LinkedIn, YouTube,
+    SMS, Email Marketing — and the auto-fire toggle).
 
 > **If you already ran the prototype before:** migrations 0003 and 0004 are
 > additive and safe to apply on top of an existing database. After running
@@ -136,27 +139,35 @@ Pushing new commits to `main` automatically redeploys.
 
 ## Demo flow
 
-A clean ~5 minute demo for marketing leadership:
+A clean ~7 minute demo for marketing leadership:
 
-1. **Open the Admin tab.** Talk through the three steps.
+1. **Open the Admin tab.** Talk through the steps. Optionally turn auto-fire
+   OFF for a cleaner activation feed during demo.
 2. **Click "Generate Dummy Data."** Wait ~15 seconds. Explain: "This is
    simulating 1,000 users across two months of website behavior — visitors,
    browsers, cart abandoners, registrants, customers."
 3. **Click "Run Segmentation."** Watch the result panel. Explain: "This is
    what would run every 15 minutes in production. It rebuilds every user's
-   profile, assigns them to the highest-priority audience they qualify for,
-   and fires activation signals."
-4. **Open the Overview tab.** Show segment distribution. Talk about funnel
-   shape — the bouncer count is the biggest win for media spend efficiency.
-5. **Open the Audiences tab.** Walk through each segment with the "why this
-   matters" copy. This is the centerpiece — show how each audience has a
-   clear definition, channel mapping, and creative angle.
-6. **Open the User Lookup tab.** Click any user. Show the full event history,
-   segment, and reasoning. Demonstrates that every audience decision is
-   traceable to the underlying behavior.
-7. **Open the Activations tab.** Show the live feed. "Every signal here is
-   what would fire to Meta, Google Ads, the onsite modal, or CRM in
-   production."
+   profile, computes attributes, and assigns them to the highest-priority
+   audience they qualify for."
+4. **Open the Overview tab.** Show segment distribution.
+5. **Open the Audiences tab.** Walk through each category. Show how
+   sub-attributes (Mega7 affinity, high price tier) stack on top of primary
+   segments.
+6. ***The decision moment*** — pick an audience like "Abandoned Cart — High
+   Value", click **Push to channels**, select Meta + Snap + Email, give it a
+   campaign name, click confirm. Demonstrate the success state.
+7. **Open the Builder tab.** Construct a custom audience: "High Intent +
+   Mega7 affinity + Fresh recency". Watch the count update live. Push to
+   channels. This is the moment that demonstrates the platform's flexibility
+   beyond hard-coded segments.
+8. **Open the Activations tab.** Switch to the **Manual** tab. Show your
+   deliberate pushes — clearly marked, with campaign names and audience
+   sizes. Switch to Auto if you want to show the firehose of background
+   simulations.
+9. **Open the User Lookup tab.** Click any user. Show their profile,
+   attribute chips, segment, and full event history. Demonstrates that every
+   audience decision is traceable.
 
 ## What's NOT in the prototype (intentional)
 

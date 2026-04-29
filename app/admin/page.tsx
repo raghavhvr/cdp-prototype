@@ -1,8 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { Card, CardTitle, CardDescription, Button, Badge } from "@/components/ui";
-import { Database, Play, RotateCcw, CheckCircle2, AlertTriangle } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Card, CardTitle, CardDescription, Button } from "@/components/ui";
+import {
+  Database,
+  Play,
+  RotateCcw,
+  CheckCircle2,
+  AlertTriangle,
+  Zap,
+  Hand,
+} from "lucide-react";
 
 interface RunResult {
   ok: boolean;
@@ -15,7 +23,23 @@ export default function AdminPage() {
   const [generating, setGenerating] = useState(false);
   const [running, setRunning] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [autoFire, setAutoFire] = useState(true);
+  const [autoFireLoading, setAutoFireLoading] = useState(false);
   const [results, setResults] = useState<RunResult[]>([]);
+
+  // Load current setting on mount
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.ok && data.settings) {
+          // Setting is stored as JSONB boolean — could come back as true/false directly
+          const v = data.settings.auto_fire_activations;
+          setAutoFire(v === true || v === "true");
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   function addResult(r: RunResult) {
     setResults((prev) => [r, ...prev].slice(0, 5));
@@ -55,9 +79,10 @@ export default function AdminPage() {
       const data = await res.json();
       if (data.ok && data.result) {
         const r = data.result;
+        const autoNote = r.auto_fire_enabled ? "" : " · auto-fire OFF";
         addResult({
           ok: true,
-          message: `Processed ${r.profiles_processed} profiles · ${r.segment_changes} segment changes · ${Math.round(r.duration_ms)}ms`,
+          message: `Processed ${r.profiles_processed} profiles · ${r.segment_changes} segment changes · ${Math.round(r.duration_ms)}ms${autoNote}`,
           details: r.segment_sizes,
         });
       } else {
@@ -73,7 +98,12 @@ export default function AdminPage() {
   }
 
   async function handleReset() {
-    if (!confirm("This will delete all CDP data (events, profiles, activations). Continue?")) return;
+    if (
+      !confirm(
+        "This will delete all CDP data (events, profiles, activations). Continue?"
+      )
+    )
+      return;
     setResetting(true);
     try {
       const res = await fetch("/api/reset", { method: "POST" });
@@ -92,13 +122,44 @@ export default function AdminPage() {
     setResetting(false);
   }
 
+  async function handleToggleAutoFire() {
+    const newValue = !autoFire;
+    setAutoFireLoading(true);
+    try {
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          key: "auto_fire_activations",
+          value: newValue,
+        }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setAutoFire(newValue);
+        addResult({
+          ok: true,
+          message: `Auto-fire activations ${newValue ? "enabled" : "disabled"}.`,
+        });
+      } else {
+        addResult({ ok: false, message: data.error ?? "Failed" });
+      }
+    } catch (err) {
+      addResult({
+        ok: false,
+        message: err instanceof Error ? err.message : "Unknown error",
+      });
+    }
+    setAutoFireLoading(false);
+  }
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-semibold">Admin</h1>
         <p className="text-brand-muted mt-1">
-          Generate dummy data, run the segmentation engine, and reset. Use this
-          to drive your demo.
+          Generate dummy data, run segmentation, reset, and configure
+          activation behavior.
         </p>
       </div>
 
@@ -108,7 +169,9 @@ export default function AdminPage() {
         <CardDescription>
           For a clean demo: <strong>1.</strong> Click Generate Dummy Data.{" "}
           <strong>2.</strong> Click Run Segmentation. <strong>3.</strong> Open
-          the Audiences and Activations tabs to walk through results.
+          the Audiences tab to walk through results. <strong>4.</strong> Pick
+          an audience and click &ldquo;Push to channels&rdquo; — or use the
+          Builder to construct a custom audience.
         </CardDescription>
       </Card>
 
@@ -136,7 +199,9 @@ export default function AdminPage() {
                 <input
                   type="number"
                   value={userCount}
-                  onChange={(e) => setUserCount(parseInt(e.target.value) || 1000)}
+                  onChange={(e) =>
+                    setUserCount(parseInt(e.target.value) || 1000)
+                  }
                   min={100}
                   max={5000}
                   step={100}
@@ -148,7 +213,7 @@ export default function AdminPage() {
                 Generate
               </Button>
               <span className="text-xs text-brand-dim">
-                Generates ~5-15 events per user. ~10–30 seconds.
+                Generates ~5–15 events per user. ~10–30 seconds.
               </span>
             </div>
           </div>
@@ -167,12 +232,11 @@ export default function AdminPage() {
               Run Segmentation
             </CardTitle>
             <CardDescription>
-              Rebuilds user profiles from raw events, applies priority-based
-              segment assignment, and queues activations for users entering
-              activatable segments.
+              Rebuilds user profiles from raw events, computes sub-attributes,
+              and assigns each user to a single priority-based segment.
             </CardDescription>
             <div className="mt-4">
-              <Button onClick={handleSegment} loading={running} variant="primary">
+              <Button onClick={handleSegment} loading={running}>
                 Run Now
               </Button>
             </div>
@@ -180,7 +244,53 @@ export default function AdminPage() {
         </div>
       </Card>
 
-      {/* Step 3 */}
+      {/* Auto-fire toggle */}
+      <Card>
+        <div className="flex items-start gap-4">
+          <div className="w-10 h-10 rounded-full bg-brand-info/15 text-brand-info flex items-center justify-center font-semibold flex-shrink-0">
+            <Zap className="w-5 h-5" />
+          </div>
+          <div className="flex-1">
+            <CardTitle>Auto-fire Activations</CardTitle>
+            <CardDescription>
+              When ON: every segmentation run automatically queues simulated
+              activations to default channels for users entering activatable
+              segments. When OFF: only manual pushes from the Audiences page
+              and Builder create activations — useful for clean demos.
+            </CardDescription>
+            <div className="mt-4 flex items-center gap-4">
+              <button
+                onClick={handleToggleAutoFire}
+                disabled={autoFireLoading}
+                className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
+                  autoFire ? "bg-brand-accent" : "bg-brand-border"
+                } ${autoFireLoading ? "opacity-50" : ""}`}
+              >
+                <span
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                    autoFire ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+              <div className="text-sm">
+                {autoFire ? (
+                  <span className="text-brand-success flex items-center gap-1.5">
+                    <Zap className="w-4 h-4" />
+                    Auto-fire ON — activations created on segmentation
+                  </span>
+                ) : (
+                  <span className="text-brand-muted flex items-center gap-1.5">
+                    <Hand className="w-4 h-4" />
+                    Auto-fire OFF — only manual pushes create activations
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Reset */}
       <Card>
         <div className="flex items-start gap-4">
           <div className="w-10 h-10 rounded-full bg-brand-danger/15 text-brand-danger flex items-center justify-center font-semibold flex-shrink-0">
@@ -220,7 +330,9 @@ export default function AdminPage() {
                   <AlertTriangle className="w-4 h-4 text-brand-danger mt-0.5 flex-shrink-0" />
                 )}
                 <div className="flex-1">
-                  <div className={r.ok ? "text-brand-text" : "text-brand-danger"}>
+                  <div
+                    className={r.ok ? "text-brand-text" : "text-brand-danger"}
+                  >
                     {r.message}
                   </div>
                   {r.details && (

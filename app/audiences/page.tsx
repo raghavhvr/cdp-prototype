@@ -7,11 +7,13 @@ import {
   SEGMENT_CATEGORIES,
   SegmentKey,
   ATTRIBUTES_LIST,
-  getAttributeLabel,
 } from "@/lib/segments";
-import { Card, CardTitle, CardDescription, Badge } from "@/components/ui";
+import { ChannelKey } from "@/lib/channels";
+import { Card, CardTitle, CardDescription, Badge, Button } from "@/components/ui";
+import { PushModal } from "@/components/PushModal";
 import { formatNumber, formatAed } from "@/lib/utils";
-import { Send, Pause, Layers, Sparkles } from "lucide-react";
+import { Send, Pause, Layers, Sparkles, Wand2 } from "lucide-react";
+import Link from "next/link";
 
 interface SegmentStats {
   user_count: number;
@@ -22,10 +24,37 @@ interface SegmentStats {
   total_cart_value_aed: number | null;
 }
 
+// Map segment recommendedChannels (which are display strings) to ChannelKeys
+// for pre-selecting in the push modal. Best-effort match — falls back to []
+function suggestChannelsForSegment(segmentKey: SegmentKey): ChannelKey[] {
+  const seg = SEGMENTS[segmentKey];
+  const suggested: ChannelKey[] = [];
+  for (const ch of seg.recommendedChannels) {
+    const lower = ch.toLowerCase();
+    if (lower.includes("meta")) suggested.push("meta");
+    if (lower.includes("google")) suggested.push("google_ads");
+    if (lower.includes("snap")) suggested.push("snapchat");
+    if (lower.includes("tiktok")) suggested.push("tiktok");
+    if (lower.includes("linkedin")) suggested.push("linkedin");
+    if (lower.includes("youtube")) suggested.push("youtube");
+    if (lower.includes("sms")) suggested.push("sms");
+    if (lower.includes("crm") || lower.includes("email")) {
+      // Prefer crm for retention, marketing for acquisition
+      suggested.push(seg.category === "lifecycle" ? "email_crm" : "email_marketing");
+    }
+    if (lower.includes("onsite") || lower.includes("modal")) suggested.push("onsite_modal");
+  }
+  return Array.from(new Set(suggested));
+}
+
 export default function AudiencesPage() {
   const [stats, setStats] = useState<Record<string, SegmentStats>>({});
   const [loading, setLoading] = useState(true);
   const [highlighted, setHighlighted] = useState<string | null>(null);
+  const [pushTarget, setPushTarget] = useState<{
+    segment: SegmentKey;
+    size: number;
+  } | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -80,15 +109,45 @@ export default function AudiencesPage() {
     };
   }, []);
 
+  async function handlePush(params: {
+    channels: ChannelKey[];
+    campaignName: string;
+    creativeId: string;
+  }) {
+    if (!pushTarget) return;
+    const res = await fetch("/api/activate/segment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        segment: pushTarget.segment,
+        channels: params.channels,
+        campaignName: params.campaignName || null,
+        creativeId: params.creativeId || null,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      throw new Error(data.error ?? "Push failed");
+    }
+  }
+
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-semibold">Audiences</h1>
-        <p className="text-brand-muted mt-1 max-w-3xl">
-          Each visitor is assigned to exactly one primary audience based on
-          priority. Sub-attributes (game affinity, price tier, recency) stack
-          on top to enable personalized creative within each audience.
-        </p>
+      <div className="flex items-start justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-3xl font-semibold">Audiences</h1>
+          <p className="text-brand-muted mt-1 max-w-3xl">
+            Each visitor is assigned to exactly one primary audience based on
+            priority. Sub-attributes (game affinity, price tier, recency) stack
+            on top to enable personalized creative within each audience.
+          </p>
+        </div>
+        <Link href="/builder">
+          <Button variant="secondary">
+            <Wand2 className="w-4 h-4" />
+            Build custom audience
+          </Button>
+        </Link>
       </div>
 
       {/* Attribute reference */}
@@ -149,11 +208,29 @@ export default function AudiencesPage() {
                 stats={stats[segKey]}
                 loading={loading}
                 isHighlighted={highlighted === segKey}
+                onPush={() =>
+                  setPushTarget({
+                    segment: segKey,
+                    size: stats[segKey]?.user_count ?? 0,
+                  })
+                }
               />
             ))}
           </div>
         </div>
       ))}
+
+      {/* Push modal */}
+      {pushTarget && (
+        <PushModal
+          open={true}
+          onClose={() => setPushTarget(null)}
+          audienceLabel={SEGMENTS[pushTarget.segment].displayName}
+          audienceSize={pushTarget.size}
+          suggestedChannels={suggestChannelsForSegment(pushTarget.segment)}
+          onConfirm={handlePush}
+        />
+      )}
     </div>
   );
 }
@@ -163,14 +240,17 @@ function SegmentRow({
   stats,
   loading,
   isHighlighted,
+  onPush,
 }: {
   segmentKey: SegmentKey;
   stats?: SegmentStats;
   loading: boolean;
   isHighlighted?: boolean;
+  onPush: () => void;
 }) {
   const seg = SEGMENTS[segmentKey];
   const count = stats?.user_count ?? 0;
+  const canPush = seg.shouldActivate && count > 0;
 
   return (
     <Card
@@ -223,7 +303,7 @@ function SegmentRow({
           </div>
         </div>
 
-        <div className="flex-shrink-0 min-w-[180px] space-y-2">
+        <div className="flex-shrink-0 min-w-[200px] space-y-3">
           <div>
             <div className="text-xs text-brand-dim">USERS IN AUDIENCE</div>
             <div className="text-3xl font-semibold">
@@ -246,6 +326,12 @@ function SegmentRow({
                 </div>
               )}
             </>
+          )}
+          {canPush && (
+            <Button onClick={onPush} size="sm" className="w-full">
+              <Send className="w-3.5 h-3.5" />
+              Push to channels
+            </Button>
           )}
         </div>
       </div>

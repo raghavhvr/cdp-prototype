@@ -9,8 +9,9 @@
 5. **SQL Editor** → New Query → paste contents of `supabase/migrations/0003_attributes_and_segments.sql` → Run
 6. **SQL Editor** → New Query → paste contents of `supabase/migrations/0004_updated_segmentation.sql` → Run
 7. **SQL Editor** → New Query → paste contents of `supabase/migrations/0005_optimized_segmentation.sql` → Run (performance fix for larger datasets)
-8. **Database → Replication** → enable replication for `cdp_user_profiles`, `cdp_activations`, `cdp_events`
-9. **Settings → API Keys** → copy: Project URL, **publishable key** (`sb_publishable_...`), **secret key** (`sb_secret_...`)
+8. **SQL Editor** → New Query → paste contents of `supabase/migrations/0006_manual_activation.sql` → Run (adds manual push, expanded channels, auto-fire toggle)
+9. **Database → Replication** → enable replication for `cdp_user_profiles`, `cdp_activations`, `cdp_events`
+10. **Settings → API Keys** → copy: Project URL, **publishable key** (`sb_publishable_...`), **secret key** (`sb_secret_...`)
 
 ## 2. Local run (5 min)
 

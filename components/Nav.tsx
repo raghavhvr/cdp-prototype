@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Users, Layers, Send, Settings } from "lucide-react";
+import { LayoutDashboard, Users, Layers, Send, Settings, Wand2 } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
   { href: "/audiences", label: "Audiences", icon: Layers },
+  { href: "/builder", label: "Builder", icon: Wand2 },
   { href: "/users", label: "User Lookup", icon: Users },
   { href: "/activations", label: "Activations", icon: Send },
   { href: "/admin", label: "Admin", icon: Settings },
